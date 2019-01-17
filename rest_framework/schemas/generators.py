@@ -8,7 +8,6 @@ from collections import Counter, OrderedDict
 from importlib import import_module
 
 from django.conf import settings
-from django.contrib.admindocs.views import simplify_regex
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
 from django.utils import six
@@ -170,15 +169,7 @@ class EndpointEnumerator(object):
 
         for pattern in patterns:
             path_regex = prefix + get_original_route(pattern)
-            if isinstance(pattern, URLPattern):
-                path = self.get_path_from_regex(path_regex)
-                callback = pattern.callback
-                if self.should_include_endpoint(path, callback):
-                    for method in self.get_allowed_methods(callback):
-                        endpoint = (path, method, callback)
-                        api_endpoints.append(endpoint)
-
-            elif isinstance(pattern, URLResolver):
+            if isinstance(pattern, URLResolver):
                 nested_endpoints = self.get_api_endpoints(
                     patterns=pattern.url_patterns,
                     prefix=path_regex
@@ -188,16 +179,6 @@ class EndpointEnumerator(object):
         api_endpoints = sorted(api_endpoints, key=endpoint_ordering)
 
         return api_endpoints
-
-    def get_path_from_regex(self, path_regex):
-        """
-        Given a URL conf regex, return a URI template string.
-        """
-        path = simplify_regex(path_regex)
-
-        # Strip Django 2.0 convertors as they are incompatible with uritemplate format
-        path = re.sub(_PATH_PARAMETER_COMPONENT_RE, r'{\g<parameter>}', path)
-        return path
 
     def should_include_endpoint(self, path, callback):
         """
